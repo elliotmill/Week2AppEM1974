@@ -4,6 +4,10 @@ import android.content.pm.PackageManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -13,7 +17,7 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
-public class MainActivity extends FragmentActivity implements OnMapReadyCallback {
+public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
 
@@ -41,5 +45,41 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
         mMap.getUiSettings().setZoomControlsEnabled(true);
+    }
+
+    // Menu configuration
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        item.setChecked(true);
+        int id = item.getItemId();
+        switch (id) {
+            case R.id.menu_normal: {
+                mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+                break;
+            }
+            case R.id.menu_hybrid: {
+                mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
+                break;
+            }
+            case R.id.menu_satellite: {
+                mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
+                break;
+            }
+            case R.id.menu_terrain: {
+                mMap.setMapType(GoogleMap.MAP_TYPE_TERRAIN);
+                break;
+            }
+            default: {
+                mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+                break;
+            }
+        }
+        return true;
     }
 }
