@@ -1,5 +1,7 @@
 package com.android.elliotmiller.week3appem1974;
 
+import android.*;
+import android.Manifest;
 import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
@@ -57,12 +59,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private void setupLocationConfig() {
         if (ActivityCompat
                 .checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED && ActivityCompat
-                .checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED
                 ) {
             requestPermissions(new String[]{
-                            android.Manifest.permission.ACCESS_COARSE_LOCATION
+                            android.Manifest.permission.ACCESS_FINE_LOCATION
                     },
                     PERMISSIONS_REQUEST_LOCATION);
             Toast.makeText(MainActivity.this, "You need to have Location Permission enabled.", Toast.LENGTH_LONG).show();
