@@ -1,6 +1,12 @@
 package com.android.elliotmiller.week3appem1974;
 
+import android.content.Context;
+import android.content.IntentSender;
 import android.content.pm.PackageManager;
+import android.location.Criteria;
+import android.location.Location;
+import android.location.LocationManager;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
@@ -10,27 +16,100 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
+import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.common.api.CommonStatusCodes;
+import com.google.android.gms.common.api.ResolvableApiException;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.LocationSettingsRequest;
+import com.google.android.gms.location.LocationSettingsResponse;
+import com.google.android.gms.location.LocationSettingsStatusCodes;
+import com.google.android.gms.location.SettingsClient;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 
-public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
+public class MainActivity extends AppCompatActivity implements OnMapReadyCallback, LocationListener {
 
     private GoogleMap mMap;
+    private FusedLocationProviderClient mFusedLocationClient;
+    private LocationRequest mLocationRequest;
+    protected static final int REQUEST_CHECK_SETTINGS = 0x1;
+    private MarkerOptions markerOptions;
+    private Marker mapMarker;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+        final SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        mFusedLocationClient.getLastLocation()
+                .addOnSuccessListener(this, new OnSuccessListener<Location>() {
+                    @Override
+                    public void onSuccess(Location lastLocation) {
+                        // Got last known location. In some rare situations this can be null.
+                        if (lastLocation != null && markerOptions == null) {
+                            // ...
+                            Toast.makeText(MainActivity.this, "Location " + lastLocation, Toast.LENGTH_SHORT).show();
+                            LatLng ll = new LatLng(lastLocation.getLatitude(), lastLocation.getLongitude());
+                            markerOptions = new MarkerOptions().position(ll).title("I'm here");
+                            mapMarker = mMap.addMarker(markerOptions);
+                        }
+                    }
+                });
+        this.createLocationRequest();
+        this.startLocationUpdates();
     }
 
+    private void startLocationUpdates() {
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            // We do not need to implement this as our target api version doesn't need it.
+            return;
+        }
+        mFusedLocationClient.requestLocationUpdates(mLocationRequest,
+                new LocationCallback(){
+                    @Override
+                    public void onLocationResult(LocationResult locationResult) {
+
+                        for (Location location : locationResult.getLocations()) {
+                            LatLng currentLocation = new LatLng(location.getLatitude(), location.getLongitude());
+                            if (markerOptions == null) {
+                                markerOptions = new MarkerOptions().position(currentLocation).title("I'm here");
+                                mapMarker = mMap.addMarker(markerOptions);
+                            } else {
+                                mapMarker.setPosition(currentLocation);
+                            }
+                        }
+                    };
+                },
+                null /* Looper */);
+    }
+
+    private void createLocationRequest() {
+        mLocationRequest = new LocationRequest();
+        mLocationRequest.setInterval(10000);
+        mLocationRequest.setFastestInterval(5000);
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+    }
 
     /**
      * Manipulates the map once available.
@@ -81,5 +160,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         }
         return true;
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        Toast.makeText(this, "Location Changed", Toast.LENGTH_SHORT).show();
     }
 }
