@@ -3,7 +3,9 @@ package com.android.elliotmiller.week3appem1974;
 import android.content.Context;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
+import android.location.Address;
 import android.location.Criteria;
+import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationManager;
 import android.support.annotation.NonNull;
@@ -12,8 +14,11 @@ import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.common.api.ApiException;
@@ -40,7 +45,11 @@ import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 
-public class MainActivity extends AppCompatActivity implements OnMapReadyCallback, LocationListener {
+import java.io.IOException;
+import java.util.List;
+import java.util.Locale;
+
+public class MainActivity extends AppCompatActivity implements OnMapReadyCallback, LocationListener, GoogleMap.InfoWindowAdapter {
 
     private GoogleMap mMap;
     private FusedLocationProviderClient mFusedLocationClient;
@@ -124,6 +133,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
         mMap.getUiSettings().setZoomControlsEnabled(true);
+        mMap.setInfoWindowAdapter(this);
     }
 
     // Menu configuration
@@ -165,5 +175,41 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public void onLocationChanged(Location location) {
         Toast.makeText(this, "Location Changed", Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public View getInfoWindow(Marker marker) {
+        View view = getLayoutInflater().inflate(R.layout.map_info_window, null);
+        LatLng ll = marker.getPosition();
+        if (Geocoder.isPresent()) {
+            Geocoder geocoder = new Geocoder(this, Locale.getDefault());
+            List<Address> addresses = null;
+            try {
+                addresses = geocoder.getFromLocation(ll.latitude, ll.longitude, 1);
+                Log.e("Tag", "Addresses:" +  addresses);
+                if (addresses.size() > 0) {
+                    String cityName = addresses.get(0).getAddressLine(0);
+                    String stateName = addresses.get(0).getAddressLine(1);
+                    String countryName = addresses.get(0).getCountryName();
+                    String zipCode = addresses.get(0).getPostalCode();
+                    Log.e("Tag", "Address:" + addresses.get(0).toString());
+                    ((TextView)view.findViewById(R.id.tv_city)).setText("City: " + cityName);
+                    ((TextView)view.findViewById(R.id.tv_state)).setText("City: " + stateName);
+                    ((TextView)view.findViewById(R.id.tv_country)).setText("City: " + countryName);
+                    ((TextView)view.findViewById(R.id.tv_city)).setText("City: " + zipCode);
+                }
+            } catch (IOException e) {
+                Log.e("Tag", "Exception:" + e.toString());
+            }
+        }
+        else {
+            Toast.makeText(this, "Geocoding is not present on this device", Toast.LENGTH_LONG).show();
+        }
+        return view;
+    }
+
+    @Override
+    public View getInfoContents(Marker marker) {
+        return null;
     }
 }
