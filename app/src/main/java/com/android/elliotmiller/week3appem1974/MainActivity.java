@@ -1,19 +1,12 @@
 package com.android.elliotmiller.week3appem1974;
 
-import android.content.Context;
-import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.location.Address;
-import android.location.Criteria;
 import android.location.Geocoder;
 import android.location.Location;
-import android.location.LocationManager;
-import android.support.annotation.NonNull;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -21,19 +14,12 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.gms.common.api.ApiException;
-import com.google.android.gms.common.api.CommonStatusCodes;
-import com.google.android.gms.common.api.ResolvableApiException;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.location.LocationSettingsRequest;
-import com.google.android.gms.location.LocationSettingsResponse;
-import com.google.android.gms.location.LocationSettingsStatusCodes;
-import com.google.android.gms.location.SettingsClient;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -41,9 +27,7 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
 
 import java.io.IOException;
 import java.util.List;
@@ -51,6 +35,7 @@ import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback, LocationListener, GoogleMap.InfoWindowAdapter {
 
+    private static final int PERMISSIONS_REQUEST_LOCATION = 9;
     private GoogleMap mMap;
     private FusedLocationProviderClient mFusedLocationClient;
     private LocationRequest mLocationRequest;
@@ -66,10 +51,24 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         final SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
-        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            return;
+        this.setupLocationConfig();
+    }
+
+    private void setupLocationConfig() {
+        if (ActivityCompat
+                .checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED && ActivityCompat
+                .checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED
+                ) {
+            requestPermissions(new String[]{
+                            android.Manifest.permission.ACCESS_COARSE_LOCATION
+                    },
+                    PERMISSIONS_REQUEST_LOCATION);
+            Toast.makeText(MainActivity.this, "You need to have Location Permission enabled.", Toast.LENGTH_LONG).show();
+            finish();
         }
+        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         mFusedLocationClient.getLastLocation()
                 .addOnSuccessListener(this, new OnSuccessListener<Location>() {
                     @Override
@@ -84,21 +83,16 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                         }
                     }
                 });
-        this.createLocationRequest();
-        this.startLocationUpdates();
-    }
 
-    private void startLocationUpdates() {
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            // We do not need to implement this as our target api version doesn't need it.
-            return;
-        }
+        mLocationRequest = new LocationRequest();
+        mLocationRequest.setInterval(10000);
+        mLocationRequest.setFastestInterval(5000);
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+
         mFusedLocationClient.requestLocationUpdates(mLocationRequest,
-                new LocationCallback(){
+                new LocationCallback() {
                     @Override
                     public void onLocationResult(LocationResult locationResult) {
-
                         for (Location location : locationResult.getLocations()) {
                             LatLng currentLocation = new LatLng(location.getLatitude(), location.getLongitude());
                             if (markerOptions == null) {
@@ -107,17 +101,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                             } else {
                                 mapMarker.setPosition(currentLocation);
                             }
+                            mMap.moveCamera(CameraUpdateFactory.newLatLng(currentLocation));
                         }
-                    };
-                },
-                null /* Looper */);
-    }
+                    }
 
-    private void createLocationRequest() {
-        mLocationRequest = new LocationRequest();
-        mLocationRequest.setInterval(10000);
-        mLocationRequest.setFastestInterval(5000);
-        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+                    ;
+                },
+                null /* Looper */
+        );
     }
 
     /**
@@ -131,6 +122,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
      */
     @Override
     public void onMapReady(GoogleMap googleMap) {
+        Toast.makeText(this, "Map Ready", Toast.LENGTH_SHORT).show();
         mMap = googleMap;
         mMap.getUiSettings().setZoomControlsEnabled(true);
         mMap.setInfoWindowAdapter(this);
@@ -186,23 +178,21 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             List<Address> addresses = null;
             try {
                 addresses = geocoder.getFromLocation(ll.latitude, ll.longitude, 1);
-                Log.e("Tag", "Addresses:" +  addresses);
+                Log.e("Tag", "Addresses:" + addresses);
                 if (addresses.size() > 0) {
-                    String cityName = addresses.get(0).getAddressLine(0);
-                    String stateName = addresses.get(0).getAddressLine(1);
-                    String countryName = addresses.get(0).getCountryName();
-                    String zipCode = addresses.get(0).getAddressLine(0);
-                    Log.e("Tag", "Address:" + addresses.get(0).toString());
-                    ((TextView)view.findViewById(R.id.tv_city)).setText("Address: " + cityName);
-                    ((TextView)view.findViewById(R.id.tv_state)).setText("City: " + stateName);
-                    ((TextView)view.findViewById(R.id.tv_country)).setText("Country: " + countryName);
-                    ((TextView)view.findViewById(R.id.tv_zipcode)).setText("Zip Code: " + zipCode);
+                    String address = addresses.get(0).getAddressLine(0);
+                    String city = addresses.get(0).getAddressLine(1);
+                    String country = addresses.get(0).getCountryName();
+                    String zipCode = addresses.get(0).getPostalCode();
+                    ((TextView) view.findViewById(R.id.tv_address)).setText("Address: " + address);
+                    ((TextView) view.findViewById(R.id.tv_city)).setText("City: " + city);
+                    ((TextView) view.findViewById(R.id.tv_country)).setText("Country: " + country);
+                    ((TextView) view.findViewById(R.id.tv_zipcode)).setText("Zip Code: " + zipCode);
                 }
             } catch (IOException e) {
                 Log.e("Tag", "Exception:" + e.toString());
             }
-        }
-        else {
+        } else {
             Toast.makeText(this, "Geocoding is not present on this device", Toast.LENGTH_LONG).show();
         }
         return view;
@@ -211,5 +201,23 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public View getInfoContents(Marker marker) {
         return null;
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case PERMISSIONS_REQUEST_LOCATION: {
+
+                // If the request is cancelled, the result array will be empty (0)//
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Toast.makeText(MainActivity.this, "Permission Granted", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(MainActivity.this, "You need to have Location Permission enabled.", Toast.LENGTH_LONG).show();
+                    finish();
+                }
+                return;
+            }
+        }
     }
 }
