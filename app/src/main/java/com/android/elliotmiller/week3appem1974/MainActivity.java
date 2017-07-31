@@ -193,10 +193,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     String countryName = addresses.get(0).getCountryName();
                     String zipCode = addresses.get(0).getAddressLine(0);
                     Log.e("Tag", "Address:" + addresses.get(0).toString());
-                    ((TextView)view.findViewById(R.id.tv_city)).setText("City: " + cityName);
+                    ((TextView)view.findViewById(R.id.tv_city)).setText("Address: " + cityName);
                     ((TextView)view.findViewById(R.id.tv_state)).setText("City: " + stateName);
-                    ((TextView)view.findViewById(R.id.tv_country)).setText("City: " + countryName);
-                    ((TextView)view.findViewById(R.id.tv_city)).setText("City: " + zipCode);
+                    ((TextView)view.findViewById(R.id.tv_country)).setText("Country: " + countryName);
+                    ((TextView)view.findViewById(R.id.tv_zipcode)).setText("Zip Code: " + zipCode);
                 }
             } catch (IOException e) {
                 Log.e("Tag", "Exception:" + e.toString());
